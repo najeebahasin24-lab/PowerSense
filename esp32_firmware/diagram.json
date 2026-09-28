@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "author": "AI Smart Transformer Team",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "wokwi-esp32-devkit-v1", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-potentiometer", "id": "pot_temp", "top": -120, "left": -180, "attrs": { "label": "Temp LM35" } },
+    { "type": "wokwi-potentiometer", "id": "pot_oil", "top": -30, "left": -180, "attrs": { "label": "Oil Level" } },
+    { "type": "wokwi-potentiometer", "id": "pot_volt", "top": 60, "left": -180, "attrs": { "label": "Voltage ZMPT" } },
+    { "type": "wokwi-potentiometer", "id": "pot_curr", "top": 150, "left": -180, "attrs": { "label": "Current ACS" } },
+    { "type": "wokwi-led", "id": "led_status", "top": -80, "left": 160, "attrs": { "color": "green", "label": "Health" } }
+  ],
+  "connections": [
+    [ "esp:TX0", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX0", "$serialMonitor:TX", "", [] ],
+    [ "esp:GND.1", "pot_temp:GND", "black", [ "v0" ] ],
+    [ "esp:3V3", "pot_temp:VCC", "red", [ "v0" ] ],
+    [ "pot_temp:SIG", "esp:D34", "orange", [ "v0" ] ],
+    [ "esp:GND.1", "pot_oil:GND", "black", [ "v0" ] ],
+    [ "esp:3V3", "pot_oil:VCC", "red", [ "v0" ] ],
+    [ "pot_oil:SIG", "esp:D33", "blue", [ "v0" ] ],
+    [ "esp:GND.1", "pot_volt:GND", "black", [ "v0" ] ],
+    [ "esp:3V3", "pot_volt:VCC", "red", [ "v0" ] ],
+    [ "pot_volt:SIG", "esp:D32", "yellow", [ "v0" ] ],
+    [ "esp:GND.1", "pot_curr:GND", "black", [ "v0" ] ],
+    [ "esp:3V3", "pot_curr:VCC", "red", [ "v0" ] ],
+    [ "pot_curr:SIG", "esp:D35", "purple", [ "v0" ] ]
+  ]
+}
