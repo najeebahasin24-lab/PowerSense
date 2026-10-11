@@ -8,13 +8,18 @@ import os
 import json
 from datetime import datetime
 
-DB_DIR = os.path.dirname(os.path.abspath(__file__))
+# Vercel-compatible temporary database directory
+DB_DIR = "/tmp/powersense_database"
+os.makedirs(DB_DIR, exist_ok=True)
+
 DB_FILE = os.path.join(DB_DIR, "transformer_health.db")
+
 
 def get_connection():
     conn = sqlite3.connect(DB_FILE)
     conn.row_factory = sqlite3.Row
     return conn
+
 
 def init_db():
     conn = get_connection()
@@ -38,14 +43,23 @@ def init_db():
     # Ensure missing columns exist in existing transformers table
     cursor.execute("PRAGMA table_info(transformers)")
     columns = [col[1] for col in cursor.fetchall()]
-    if "cooling_type" not in columns:
-        cursor.execute("ALTER TABLE transformers ADD COLUMN cooling_type TEXT DEFAULT 'ONAN'")
-    if "installation_date" not in columns:
-        cursor.execute("ALTER TABLE transformers ADD COLUMN installation_date TEXT DEFAULT '2025-01-15'")
-    if "status" not in columns:
-        cursor.execute("ALTER TABLE transformers ADD COLUMN status TEXT DEFAULT 'OPERATIONAL'")
 
-    # Telemetry time-series table (Focusing strictly on the 4 sensors)
+    if "cooling_type" not in columns:
+        cursor.execute(
+            "ALTER TABLE transformers ADD COLUMN cooling_type TEXT DEFAULT 'ONAN'"
+        )
+
+    if "installation_date" not in columns:
+        cursor.execute(
+            "ALTER TABLE transformers ADD COLUMN installation_date TEXT DEFAULT '2025-01-15'"
+        )
+
+    if "status" not in columns:
+        cursor.execute(
+            "ALTER TABLE transformers ADD COLUMN status TEXT DEFAULT 'OPERATIONAL'"
+        )
+
+    # Telemetry time-series table
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS telemetry (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -80,7 +94,7 @@ def init_db():
     )
     """)
 
-    # Maintenance work orders & inspection history
+    # Maintenance work orders and inspection history
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS maintenance (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -95,49 +109,126 @@ def init_db():
     )
     """)
 
-    # Seed Fleet Transformers
+    # Seed fleet transformers
     fleet = [
-        ('TR-001', 'Transformer 001 - Smart Substation Feeder 01', 'Substation Bay A (Lab Unit 1)', 1.0, 230.0, 'ONAN', '2025-01-15', 'OPERATIONAL'),
-        ('TR-002', 'Transformer 002 - Industrial Auxiliary Feeder', 'Substation Bay B', 1.0, 230.0, 'ONAN', '2024-11-20', 'STANDBY'),
-        ('TR-003', 'Transformer 003 - Grid Inter-Tie Testbed', 'High Voltage Lab Bay C', 1.0, 230.0, 'ONAN', '2025-03-01', 'MAINTENANCE')
+        (
+            'TR-001',
+            'Transformer 001 - Smart Substation Feeder 01',
+            'Substation Bay A (Lab Unit 1)',
+            1.0,
+            230.0,
+            'ONAN',
+            '2025-01-15',
+            'OPERATIONAL'
+        ),
+        (
+            'TR-002',
+            'Transformer 002 - Industrial Auxiliary Feeder',
+            'Substation Bay B',
+            1.0,
+            230.0,
+            'ONAN',
+            '2024-11-20',
+            'STANDBY'
+        ),
+        (
+            'TR-003',
+            'Transformer 003 - Grid Inter-Tie Testbed',
+            'High Voltage Lab Bay C',
+            1.0,
+            230.0,
+            'ONAN',
+            '2025-03-01',
+            'MAINTENANCE'
+        )
     ]
+
     for unit in fleet:
         cursor.execute("""
-        INSERT OR REPLACE INTO transformers (id, name, location, rated_kva, rated_voltage, cooling_type, installation_date, status)
+        INSERT OR REPLACE INTO transformers (
+            id, name, location, rated_kva, rated_voltage,
+            cooling_type, installation_date, status
+        )
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, unit)
 
-    # Seed Initial Maintenance History for TR-001
-    cursor.execute("SELECT COUNT(*) as cnt FROM maintenance WHERE transformer_id = 'TR-001'")
+    # Seed initial maintenance history for TR-001
+    cursor.execute(
+        "SELECT COUNT(*) AS cnt FROM maintenance WHERE transformer_id = 'TR-001'"
+    )
+
     if cursor.fetchone()["cnt"] == 0:
         initial_logs = [
-            ('TR-001', '2026-08-12', 'Oil Level Replenishment', 'Eng. R. Sharma', 'Oil Level', 'Topped up 1.5L mineral dielectric oil; resealed conservator valve.', 'Completed'),
-            ('TR-001', '2026-06-04', 'ACS712 Current Sensor Calibration', 'Saumya Kumari', 'Current', 'Recalibrated zero-offset ADC voltage to 1.65V rail; tested with resistive load.', 'Completed'),
-            ('TR-001', '2026-03-18', 'Thermal Core Sensor Verification', 'S Najeeba Hasin', 'Temperature', 'Calibrated LM35 probe against high-precision infrared pyrometer within ±0.2°C.', 'Completed'),
-            ('TR-001', '2025-12-10', 'Dielectric Breakdown Voltage (BDV) Test', 'Shanmuga Priya M.E.', 'Oil Level', 'Oil BDV measured at 48 kV; dielectric insulation compliant with IEEE C57.104.', 'Completed')
+            (
+                'TR-001',
+                '2026-08-12',
+                'Oil Level Replenishment',
+                'Eng. R. Sharma',
+                'Oil Level',
+                'Topped up 1.5L mineral dielectric oil; resealed conservator valve.',
+                'Completed'
+            ),
+            (
+                'TR-001',
+                '2026-06-04',
+                'ACS712 Current Sensor Calibration',
+                'Saumya Kumari',
+                'Current',
+                'Recalibrated zero-offset ADC voltage to 1.65V rail; tested with resistive load.',
+                'Completed'
+            ),
+            (
+                'TR-001',
+                '2026-03-18',
+                'Thermal Core Sensor Verification',
+                'S Najeeba Hasin',
+                'Temperature',
+                'Calibrated LM35 probe against high-precision infrared pyrometer within ±0.2°C.',
+                'Completed'
+            ),
+            (
+                'TR-001',
+                '2025-12-10',
+                'Dielectric Breakdown Voltage (BDV) Test',
+                'Shanmuga Priya M.E.',
+                'Oil Level',
+                'Oil BDV measured at 48 kV; dielectric insulation compliant with IEEE C57.104.',
+                'Completed'
+            )
         ]
+
         for log in initial_logs:
             cursor.execute("""
-            INSERT INTO maintenance (transformer_id, date, activity_type, technician, parameter_impacted, findings, status)
+            INSERT INTO maintenance (
+                transformer_id, date, activity_type, technician,
+                parameter_impacted, findings, status
+            )
             VALUES (?, ?, ?, ?, ?, ?, ?)
             """, log)
 
     conn.commit()
     conn.close()
 
+
 def save_telemetry(data: dict):
     conn = get_connection()
     cursor = conn.cursor()
 
-    timestamp = data.get("timestamp") or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    alert_flag = 1 if (data.get("alerts") and len(data["alerts"]) > 0) else 0
+    timestamp = data.get("timestamp") or datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+    alert_flag = (
+        1 if data.get("alerts") and len(data["alerts"]) > 0 else 0
+    )
 
     cursor.execute("""
     INSERT INTO telemetry (
-        transformer_id, timestamp, temperature, oil_level, voltage, current,
-        apparent_power, thermal_stress_index, health_status, confidence,
-        probabilities_json, alert_flag
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        transformer_id, timestamp, temperature, oil_level, voltage,
+        current, apparent_power, thermal_stress_index, health_status,
+        confidence, probabilities_json, alert_flag
+    )
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """, (
         data.get("transformer_id", "TR-001"),
         timestamp,
@@ -145,153 +236,244 @@ def save_telemetry(data: dict):
         float(data["oil_level"]),
         float(data["voltage"]),
         float(data["current"]),
-        float(data.get("apparent_power", data["voltage"] * data["current"])),
+        float(data.get(
+            "apparent_power",
+            data["voltage"] * data["current"]
+        )),
         float(data.get("thermal_stress_index", 0.0)),
         data["health_status"],
         float(data.get("confidence", 95.0)),
         json.dumps(data.get("probabilities", {})),
         alert_flag
     ))
+
     telemetry_id = cursor.lastrowid
 
-    # Insert any associated alerts
+    # Insert associated alerts
     if data.get("alerts"):
         for alt in data["alerts"]:
+            param = alt.get("param", "")
+            param_lower = param.lower()
+
             cursor.execute("""
-            INSERT INTO alerts (transformer_id, timestamp, severity, parameter, value, message)
+            INSERT INTO alerts (
+                transformer_id, timestamp, severity,
+                parameter, value, message
+            )
             VALUES (?, ?, ?, ?, ?, ?)
             """, (
                 data.get("transformer_id", "TR-001"),
                 timestamp,
                 alt.get("severity", "WARNING"),
-                alt.get("param", "General"),
-                float(data.get(alt.get("param", "").lower(), 0.0)) if alt.get("param", "").lower() in data else 0.0,
+                param or "General",
+                float(data.get(param_lower, 0.0)),
                 alt.get("msg", "Abnormal telemetry detected.")
             ))
 
     conn.commit()
     conn.close()
+
     return telemetry_id
+
 
 def get_latest_telemetry(transformer_id="TR-001"):
     conn = get_connection()
     cursor = conn.cursor()
+
     cursor.execute("""
-    SELECT * FROM telemetry 
-    WHERE transformer_id = ? 
-    ORDER BY id DESC LIMIT 1
+    SELECT * FROM telemetry
+    WHERE transformer_id = ?
+    ORDER BY id DESC
+    LIMIT 1
     """, (transformer_id,))
+
     row = cursor.fetchone()
     conn.close()
+
     if row:
-        d = dict(row)
-        d["probabilities"] = json.loads(d["probabilities_json"])
-        return d
+        data = dict(row)
+        data["probabilities"] = json.loads(data["probabilities_json"])
+        return data
+
     return None
+
 
 def get_telemetry_history(transformer_id="TR-001", limit=40):
     conn = get_connection()
     cursor = conn.cursor()
+
     cursor.execute("""
     SELECT * FROM (
-        SELECT * FROM telemetry 
-        WHERE transformer_id = ? 
-        ORDER BY id DESC LIMIT ?
-    ) ORDER BY id ASC
+        SELECT * FROM telemetry
+        WHERE transformer_id = ?
+        ORDER BY id DESC
+        LIMIT ?
+    )
+    ORDER BY id ASC
     """, (transformer_id, limit))
+
     rows = cursor.fetchall()
     conn.close()
+
     result = []
-    for r in rows:
-        d = dict(r)
-        d["probabilities"] = json.loads(d["probabilities_json"])
-        result.append(d)
+
+    for row in rows:
+        data = dict(row)
+        data["probabilities"] = json.loads(data["probabilities_json"])
+        result.append(data)
+
     return result
+
 
 def get_recent_alerts(transformer_id="TR-001", limit=30):
     conn = get_connection()
     cursor = conn.cursor()
+
     cursor.execute("""
-    SELECT * FROM alerts 
-    WHERE transformer_id = ? 
-    ORDER BY id DESC LIMIT ?
+    SELECT * FROM alerts
+    WHERE transformer_id = ?
+    ORDER BY id DESC
+    LIMIT ?
     """, (transformer_id, limit))
+
     rows = cursor.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+
+    return [dict(row) for row in rows]
+
 
 def clear_alerts(transformer_id="TR-001"):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM alerts WHERE transformer_id = ?", (transformer_id,))
+
+    cursor.execute(
+        "DELETE FROM alerts WHERE transformer_id = ?",
+        (transformer_id,)
+    )
+
     conn.commit()
     conn.close()
+
     return True
+
 
 def get_transformers():
     conn = get_connection()
     cursor = conn.cursor()
+
     cursor.execute("SELECT * FROM transformers ORDER BY id ASC")
+
     rows = cursor.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+
+    return [dict(row) for row in rows]
+
 
 def get_maintenance_records(transformer_id="TR-001"):
     conn = get_connection()
     cursor = conn.cursor()
+
     cursor.execute("""
-    SELECT * FROM maintenance 
-    WHERE transformer_id = ? 
+    SELECT * FROM maintenance
+    WHERE transformer_id = ?
     ORDER BY id DESC
     """, (transformer_id,))
+
     rows = cursor.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
 
-def add_maintenance_record(transformer_id: str, activity_type: str, technician: str, parameter_impacted: str, findings: str):
+    return [dict(row) for row in rows]
+
+
+def add_maintenance_record(
+    transformer_id: str,
+    activity_type: str,
+    technician: str,
+    parameter_impacted: str,
+    findings: str
+):
     conn = get_connection()
     cursor = conn.cursor()
+
     date_str = datetime.now().strftime("%Y-%m-%d")
+
     cursor.execute("""
-    INSERT INTO maintenance (transformer_id, date, activity_type, technician, parameter_impacted, findings, status)
+    INSERT INTO maintenance (
+        transformer_id, date, activity_type, technician,
+        parameter_impacted, findings, status
+    )
     VALUES (?, ?, ?, ?, ?, ?, 'Completed')
-    """, (transformer_id, date_str, activity_type, technician, parameter_impacted, findings))
+    """, (
+        transformer_id,
+        date_str,
+        activity_type,
+        technician,
+        parameter_impacted,
+        findings
+    ))
+
     record_id = cursor.lastrowid
+
     conn.commit()
     conn.close()
+
     return record_id
+
 
 def get_analytics_summary(transformer_id="TR-001"):
     conn = get_connection()
     cursor = conn.cursor()
-    
-    # Aggregated stats for the 4 sensors
+
+    # Aggregated statistics for the four sensor parameters
     cursor.execute("""
-    SELECT 
-        COUNT(*) as total_samples,
-        MIN(temperature) as min_temp, MAX(temperature) as max_temp, AVG(temperature) as avg_temp,
-        MIN(oil_level) as min_oil, MAX(oil_level) as max_oil, AVG(oil_level) as avg_oil,
-        MIN(voltage) as min_volt, MAX(voltage) as max_volt, AVG(voltage) as avg_volt,
-        MIN(current) as min_curr, MAX(current) as max_curr, AVG(current) as avg_curr
-    FROM telemetry WHERE transformer_id = ?
+    SELECT
+        COUNT(*) AS total_samples,
+        MIN(temperature) AS min_temp,
+        MAX(temperature) AS max_temp,
+        AVG(temperature) AS avg_temp,
+        MIN(oil_level) AS min_oil,
+        MAX(oil_level) AS max_oil,
+        AVG(oil_level) AS avg_oil,
+        MIN(voltage) AS min_volt,
+        MAX(voltage) AS max_volt,
+        AVG(voltage) AS avg_volt,
+        MIN(current) AS min_curr,
+        MAX(current) AS max_curr,
+        AVG(current) AS avg_curr
+    FROM telemetry
+    WHERE transformer_id = ?
     """, (transformer_id,))
+
     stats = dict(cursor.fetchone() or {})
 
-    # Status distribution
+    # Health status distribution
     cursor.execute("""
-    SELECT health_status, COUNT(*) as count 
-    FROM telemetry WHERE transformer_id = ? 
+    SELECT health_status, COUNT(*) AS count
+    FROM telemetry
+    WHERE transformer_id = ?
     GROUP BY health_status
     """, (transformer_id,))
-    dist = {r["health_status"]: r["count"] for r in cursor.fetchall()}
-    stats["distribution"] = dist
+
+    distribution = {
+        row["health_status"]: row["count"]
+        for row in cursor.fetchall()
+    }
+
+    stats["distribution"] = distribution
 
     # Total alerts
-    cursor.execute("SELECT COUNT(*) as total_alerts FROM alerts WHERE transformer_id = ?", (transformer_id,))
+    cursor.execute("""
+    SELECT COUNT(*) AS total_alerts
+    FROM alerts
+    WHERE transformer_id = ?
+    """, (transformer_id,))
+
     stats["total_alerts"] = cursor.fetchone()["total_alerts"]
 
     conn.close()
+
     return stats
 
-# Initialize on import
+
+# Initialize the database when the module is imported
 init_db()
