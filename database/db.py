@@ -152,59 +152,73 @@ def init_db():
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         """, unit)
 
-    # Seed initial maintenance history for TR-001
-    cursor.execute(
-        "SELECT COUNT(*) AS cnt FROM maintenance WHERE transformer_id = 'TR-001'"
+    # Ensure maintenance initial seeding is only done once
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS system_metadata (
+        key TEXT PRIMARY KEY,
+        value TEXT
     )
+    """)
 
-    if cursor.fetchone()["cnt"] == 0:
-        initial_logs = [
-            (
-                'TR-001',
-                '2026-08-12',
-                'Oil Level Replenishment',
-                'Eng. R. Sharma',
-                'Oil Level',
-                'Topped up 1.5L mineral dielectric oil; resealed conservator valve.',
-                'Completed'
-            ),
-            (
-                'TR-001',
-                '2026-06-04',
-                'ACS712 Current Sensor Calibration',
-                'Saumya Kumari',
-                'Current',
-                'Recalibrated zero-offset ADC voltage to 1.65V rail; tested with resistive load.',
-                'Completed'
-            ),
-            (
-                'TR-001',
-                '2026-03-18',
-                'Thermal Core Sensor Verification',
-                'S Najeeba Hasin',
-                'Temperature',
-                'Calibrated LM35 probe against high-precision infrared pyrometer within ±0.2°C.',
-                'Completed'
-            ),
-            (
-                'TR-001',
-                '2025-12-10',
-                'Dielectric Breakdown Voltage (BDV) Test',
-                'Shanmuga Priya M.E.',
-                'Oil Level',
-                'Oil BDV measured at 48 kV; dielectric insulation compliant with IEEE C57.104.',
-                'Completed'
-            )
-        ]
+    cursor.execute("SELECT value FROM system_metadata WHERE key = 'maintenance_seeded'")
+    seeded_record = cursor.fetchone()
 
-        for log in initial_logs:
-            cursor.execute("""
-            INSERT INTO maintenance (
-                transformer_id, date, activity_type, technician,
-                parameter_impacted, findings, status
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            """, log)
+    # Seed initial maintenance history for TR-001 only on initial setup
+    if not seeded_record:
+        cursor.execute(
+            "SELECT COUNT(*) AS cnt FROM maintenance WHERE transformer_id = 'TR-001'"
+        )
+
+        if cursor.fetchone()["cnt"] == 0:
+            initial_logs = [
+                (
+                    'TR-001',
+                    '2026-08-12',
+                    'Oil Level Replenishment',
+                    'Eng. R. Sharma',
+                    'Oil Level',
+                    'Topped up 1.5L mineral dielectric oil; resealed conservator valve.',
+                    'Completed'
+                ),
+                (
+                    'TR-001',
+                    '2026-06-04',
+                    'ACS712 Current Sensor Calibration',
+                    'Saumya Kumari',
+                    'Current',
+                    'Recalibrated zero-offset ADC voltage to 1.65V rail; tested with resistive load.',
+                    'Completed'
+                ),
+                (
+                    'TR-001',
+                    '2026-03-18',
+                    'Thermal Core Sensor Verification',
+                    'S Najeeba Hasin',
+                    'Temperature',
+                    'Calibrated LM35 probe against high-precision infrared pyrometer within ±0.2°C.',
+                    'Completed'
+                ),
+                (
+                    'TR-001',
+                    '2025-12-10',
+                    'Dielectric Breakdown Voltage (BDV) Test',
+                    'Shanmuga Priya M.E.',
+                    'Oil Level',
+                    'Oil BDV measured at 48 kV; dielectric insulation compliant with IEEE C57.104.',
+                    'Completed'
+                )
+            ]
+
+            for log in initial_logs:
+                cursor.execute("""
+                INSERT INTO maintenance (
+                    transformer_id, date, activity_type, technician,
+                    parameter_impacted, findings, status
+                )
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, log)
+
+        cursor.execute("INSERT OR REPLACE INTO system_metadata (key, value) VALUES ('maintenance_seeded', '1')")
 
     conn.commit()
     conn.close()
@@ -418,6 +432,23 @@ def add_maintenance_record(
     conn.close()
 
     return record_id
+
+
+def delete_maintenance_record(record_id: int):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "DELETE FROM maintenance WHERE id = ?",
+        (record_id,)
+    )
+
+    deleted = cursor.rowcount > 0
+
+    conn.commit()
+    conn.close()
+
+    return deleted
 
 
 def get_analytics_summary(transformer_id="TR-001"):

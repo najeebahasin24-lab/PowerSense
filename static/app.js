@@ -928,6 +928,11 @@ async function loadMaintenanceHistory() {
     if (!tbody || !list) return;
 
     tbody.innerHTML = "";
+    if (list.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted);">No maintenance work orders or field inspection logs recorded.</td></tr>`;
+      return;
+    }
+
     list.forEach((m) => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -937,11 +942,34 @@ async function loadMaintenanceHistory() {
         <td><span class="badge-pill">${m.parameter_impacted}</span></td>
         <td>${m.findings}</td>
         <td><span class="param-status-tag tag-good">✓ ${m.status}</span></td>
+        <td>
+          <button class="btn-delete-maint" onclick="deleteMaintenanceRecord(${m.id})">Delete</button>
+        </td>
       `;
       tbody.appendChild(tr);
     });
   } catch (e) {
     console.error("Maintenance load error:", e);
+  }
+}
+
+async function deleteMaintenanceRecord(recordId) {
+  const confirmed = confirm("Are you sure you want to delete this maintenance record?");
+  if (!confirmed) return;
+
+  try {
+    const res = await fetch(`/api/maintenance/${recordId}`, {
+      method: "DELETE"
+    });
+    const result = await res.json();
+    if (res.ok && result.status === "success") {
+      loadMaintenanceHistory();
+    } else {
+      alert(result.detail || "Failed to delete maintenance record.");
+    }
+  } catch (err) {
+    console.error("Delete maintenance record error:", err);
+    alert("An error occurred while deleting the maintenance record.");
   }
 }
 

@@ -29,6 +29,7 @@ from database.db import (
     get_transformers,
     get_maintenance_records,
     add_maintenance_record,
+    delete_maintenance_record,
     get_analytics_summary
 )
 from simulator import SensorSimulator
@@ -265,6 +266,24 @@ def create_maintenance(data: MaintenanceInput):
         findings=data.findings
     )
     return {"status": "success", "id": rec_id, "message": "Maintenance record created."}
+
+@app.delete("/api/maintenance/{record_id}")
+def delete_maintenance(record_id: int):
+    """Deletes an individual maintenance log entry by ID."""
+    success = delete_maintenance_record(record_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Maintenance record not found.")
+    return {"status": "success", "message": f"Maintenance record {record_id} deleted."}
+
+@app.delete("/api/maintenance")
+def delete_maintenance_by_param(id: Optional[int] = Query(None)):
+    """Deletes an individual maintenance log entry via query parameter."""
+    if id is None:
+        raise HTTPException(status_code=400, detail="Missing record id parameter.")
+    success = delete_maintenance_record(id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Maintenance record not found.")
+    return {"status": "success", "message": f"Maintenance record {id} deleted."}
 
 @app.get("/api/analytics/summary")
 def get_analytics(transformer_id: str = "TR-001"):

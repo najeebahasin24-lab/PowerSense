@@ -1316,6 +1316,24 @@ body {
   cursor: pointer;
 }
 
+.btn-delete-maint {
+  background: var(--color-crit-bg);
+  color: #dc2626;
+  border: 1px solid var(--color-crit-border);
+  padding: 5px 12px;
+  border-radius: var(--radius-sm);
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-delete-maint:hover {
+  background: #dc2626;
+  color: #fff;
+  border-color: #dc2626;
+}
+
 .report-generator-card {
   padding: 20px 24px;
 }
