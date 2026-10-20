@@ -73,11 +73,15 @@ os.makedirs(STATIC_DIR, exist_ok=True)
 # Pydantic Schemas
 class TelemetryInput(BaseModel):
     transformer_id: str = "TR-001"
-    temperature: float = Field(..., description="Oil temperature in Celsius")
+    temperature: Optional[float] = Field(None, description="TEMPERATURE in Celsius")
     oil_level: float = Field(..., description="Dielectric oil level percentage (0-100%)")
-    voltage: float = Field(..., description="RMS AC supply voltage in Volts")
-    current: float = Field(..., description="Load current in Amperes")
+    voltage: Optional[float] = Field(None, description="RMS AC supply voltage in Volts")
+    current: Optional[float] = Field(None, description="Load current in Amperes")
     timestamp: Optional[str] = None
+    sensor_status: Optional[Dict[str, bool]] = None
+
+class RuntimeModeInput(BaseModel):
+    mode: str
 
 class ScenarioInput(BaseModel):
     scenario: str = Field(..., description="NORMAL, WARNING_THERMAL, CRITICAL_LEAK, CRITICAL_OVERLOAD")
@@ -110,6 +114,7 @@ class ConnectionManager:
                 self.disconnect(connection)
 
 ws_manager = ConnectionManager()
+last_hardware_telemetry: Optional[dict] = None
 
 # Background Simulation Controller
 class SimulationController:
@@ -130,8 +135,8 @@ class SimulationController:
             await asyncio.sleep(self.interval)
 
     def start(self):
+        self.is_running = True
         if self.task is None or self.task.done():
-            self.is_running = True
             self.task = asyncio.create_task(self.run_loop())
 
     def stop(self):
@@ -141,11 +146,12 @@ sim_controller = SimulationController()
 
 # Telemetry Processing & ML Inference Pipeline
 async def process_and_broadcast_telemetry(payload: dict, source: str = "Hardware ESP32"):
+    global last_hardware_telemetry
     transformer_id = payload.get("transformer_id", "TR-001")
-    temp = float(payload["temperature"])
+    temp = float(payload.get("temperature", 0.0))
     oil = float(payload["oil_level"])
-    volt = float(payload["voltage"])
-    curr = float(payload["current"])
+    volt = float(payload.get("voltage", 0.0))
+    curr = float(payload.get("current", 0.0))
     timestamp = payload.get("timestamp") or datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # 1. AI/ML Inference via Random Forest Classifier
@@ -174,6 +180,17 @@ async def process_and_broadcast_telemetry(payload: dict, source: str = "Hardware
         "alerts": ml_res["alerts"],
         "source": source
     }
+
+    if source.startswith("ESP32") or source == "Hardware ESP32":
+        last_hardware_telemetry = {
+            "timestamp": timestamp,
+            "sensor_status": payload.get("sensor_status") or {
+                "temperature": payload.get("temperature") is not None,
+                "oil_level": payload.get("oil_level") is not None,
+                "voltage": payload.get("voltage") is not None,
+                "current": payload.get("current") is not None
+            }
+        }
 
     # 3. Save to SQLite database
     db_id = save_telemetry(record)
@@ -215,6 +232,40 @@ async def ingest_telemetry(data: TelemetryInput):
         "alerts_count": len(record["alerts"]),
         "timestamp": record["timestamp"]
     }
+
+@app.get("/api/telemetry/status")
+def get_telemetry_status():
+    """Returns ESP32 freshness and the availability of each reported sensor."""
+    if not last_hardware_telemetry:
+        return {"connected": False, "last_seen": None, "sensors": {
+            "temperature": False, "oil_level": False, "voltage": False, "current": False
+        }}
+
+    try:
+        last_seen = datetime.strptime(last_hardware_telemetry["timestamp"], "%Y-%m-%d %H:%M:%S")
+        age_seconds = max(0, (datetime.now() - last_seen).total_seconds())
+    except (KeyError, TypeError, ValueError):
+        age_seconds = 999999
+
+    connected = age_seconds <= 10
+    sensors = last_hardware_telemetry.get("sensor_status", {}) if connected else {}
+    return {
+        "connected": connected,
+        "last_seen": last_hardware_telemetry.get("timestamp"),
+        "sensors": {name: bool(sensors.get(name, False)) for name in ("temperature", "oil_level", "voltage", "current")}
+    }
+
+@app.post("/api/runtime/mode")
+def set_runtime_mode(data: RuntimeModeInput):
+    """Switch between the review simulator and the live ESP32 stream."""
+    mode = data.mode.upper()
+    if mode not in {"DEMO", "REAL"}:
+        raise HTTPException(status_code=400, detail="Mode must be DEMO or REAL.")
+    if mode == "REAL":
+        sim_controller.stop()
+    else:
+        sim_controller.start()
+    return {"mode": mode, "simulation_running": sim_controller.is_running}
 
 @app.get("/api/telemetry/latest")
 def get_latest(transformer_id: str = "TR-001"):

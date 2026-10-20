@@ -18,6 +18,9 @@ let ws = null;
 let wsReconnectTimer = null;
 let isSimPaused = false;
 let currentActiveView = "viewDashboard";
+let dashboardMode = "DEMO";
+let hardwareStatusTimer = null;
+let lastDemoTelemetry = null;
 
 // Historical buffer for analytics & correlation
 let telemetryHistoryBuffer = [];
@@ -31,6 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
   loadAlerts();
   loadMaintenanceHistory();
   initWebSocket();
+  setDashboardMode("DEMO");
 });
 
 // --------------------------------------------------------------------------
@@ -59,7 +63,7 @@ function switchView(viewId) {
     viewDashboard: { section: "Dashboard", title: "TRANSFORMER 001" },
     viewAssets: { section: "Assets", title: "Transformer Fleet & Inventory" },
     viewMonitoring: { section: "Monitoring", title: "Real-Time Sensor Telemetry" },
-    viewAnalytics: { section: "Analytics", title: "AI Health & Predictive Analytics" },
+    viewAnalytics: { section: "Analytics", title: "Health & Analytics" },
     viewAlerts: { section: "Alerts", title: "SCADA Alarms & Event Console" },
     viewReports: { section: "Reports", title: "Operational Logs & Data Reports" },
     viewMaintenance: { section: "Maintenance", title: "Preventive Maintenance & Work Orders" },
@@ -169,7 +173,7 @@ function initMainTrendChart() {
       labels: [],
       datasets: [
         {
-          label: "Oil Temperature (°C)",
+          label: "TEMPERATURE (°C)",
           data: [],
           borderColor: "#ef4444",
           backgroundColor: "rgba(239, 68, 68, 0.05)",
@@ -206,6 +210,7 @@ function initMainTrendChart() {
         },
         {
           label: "Oil Level (%)",
+          hidden: true,
           data: [],
           borderColor: "#10b981",
           backgroundColor: "transparent",
@@ -227,8 +232,8 @@ function initMainTrendChart() {
         legend: { display: false },
         tooltip: {
           backgroundColor: "#1e293b",
-          titleFont: { family: "Inter", size: 12, weight: "bold" },
-          bodyFont: { family: "Inter", size: 12 },
+          titleFont: { family: "SFProRounded", size: 12, weight: "bold" },
+          bodyFont: { family: "SFProRounded", size: 12 },
           borderColor: "#334155",
           borderWidth: 1,
           padding: 10,
@@ -238,7 +243,7 @@ function initMainTrendChart() {
       scales: {
         x: {
           grid: { color: "#f1f5f9" },
-          ticks: { color: "#94a3b8", font: { size: 10, family: "Inter" } }
+          ticks: { color: "#94a3b8", font: { size: 10, family: "SFProRounded" } }
         },
         yPrimary: {
           type: "linear",
@@ -248,7 +253,7 @@ function initMainTrendChart() {
           grid: { color: "#f1f5f9" },
           ticks: {
             color: "#ef4444",
-            font: { size: 10, family: "Inter" },
+            font: { size: 10, family: "SFProRounded" },
             callback: (v) => v + "°C"
           }
         },
@@ -260,7 +265,7 @@ function initMainTrendChart() {
           grid: { drawOnChartArea: false },
           ticks: {
             color: "#2563eb",
-            font: { size: 10, family: "Inter" },
+            font: { size: 10, family: "SFProRounded" },
             callback: (v) => v + "V"
           }
         },
@@ -297,7 +302,7 @@ function initWebSocket() {
   ws.onmessage = (event) => {
     try {
       const msg = JSON.parse(event.data);
-      if (msg.type === "TELEMETRY_UPDATE" || msg.type === "INITIAL_STATE") {
+      if (dashboardMode === "DEMO" && (msg.type === "TELEMETRY_UPDATE" || msg.type === "INITIAL_STATE")) {
         processIncomingTelemetry(msg.data);
       }
     } catch (err) {
@@ -315,16 +320,151 @@ function initWebSocket() {
   };
 }
 
+async function setDashboardMode(mode) {
+  dashboardMode = mode;
+  document.getElementById("modeDemo").classList.toggle("active", mode === "DEMO");
+  document.getElementById("modeReal").classList.toggle("active", mode === "REAL");
+  document.getElementById("realEndpointControl").classList.toggle("visible", mode === "REAL");
+  document.querySelector(".scenario-buttons-strip").classList.toggle("hidden", mode === "REAL");
+
+  try {
+    await fetch("/api/runtime/mode", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode })
+    });
+  } catch (err) {
+    console.error("Runtime mode error:", err);
+  }
+
+  if (mode === "REAL") {
+    updateSensorStatus({ connected: false, sensors: {} });
+    showUnavailableReadings();
+    pollHardwareStatus();
+    clearInterval(hardwareStatusTimer);
+    hardwareStatusTimer = setInterval(pollHardwareStatus, 3000);
+  } else {
+    clearInterval(hardwareStatusTimer);
+    await resumeDemoStream();
+    if (!ws || (ws.readyState !== WebSocket.OPEN && ws.readyState !== WebSocket.CONNECTING)) {
+      clearTimeout(wsReconnectTimer);
+      initWebSocket();
+    }
+    isSimPaused = false;
+    const streamButton = document.getElementById("btnToggleSimStream");
+    if (streamButton) {
+      streamButton.classList.remove("paused");
+      streamButton.textContent = "⏸ Pause";
+    }
+    if (lastDemoTelemetry) processIncomingTelemetry(lastDemoTelemetry);
+    updateSensorStatus({ connected: true, sensors: {
+      temperature: true, oil_level: true, voltage: true, current: true
+    }});
+  }
+}
+
+async function resumeDemoStream() {
+  try {
+    const statusResponse = await fetch("/api/simulation/status", { cache: "no-store" });
+    const status = await statusResponse.json();
+    if (!status.is_running) {
+      await fetch("/api/simulation/toggle", { method: "POST" });
+    }
+  } catch (err) {
+    console.error("Demo stream resume error:", err);
+  }
+}
+
+async function pollHardwareStatus() {
+  const requestMode = dashboardMode;
+  try {
+    const endpoint = document.getElementById("esp32Endpoint").value.trim();
+    const response = await fetch(endpoint, { cache: "no-store" });
+    if (!response.ok) throw new Error(`ESP32 responded with ${response.status}`);
+    if (requestMode !== dashboardMode || dashboardMode !== "REAL") return;
+    const telemetry = normalizeEsp32Payload(await response.json());
+    processIncomingTelemetry(telemetry);
+    updateSensorStatus({
+      connected: true,
+      sensors: telemetry.sensor_status,
+      last_seen: telemetry.timestamp
+    });
+  } catch (err) {
+    if (requestMode !== dashboardMode || dashboardMode !== "REAL") return;
+    console.warn("ESP32 telemetry unavailable:", err);
+    showUnavailableReadings();
+    updateSensorStatus({ connected: false, sensors: {} });
+  }
+}
+
+function normalizeEsp32Payload(payload) {
+  const source = payload.sensors || payload;
+  const names = ["temperature", "oil_level", "voltage", "current"];
+  const telemetry = {
+    transformer_id: payload.transformer_id || "TR-001",
+    timestamp: payload.timestamp || new Date().toISOString(),
+    health_status: payload.health_status,
+    confidence: payload.confidence,
+    alerts: payload.alerts || []
+  };
+
+  names.forEach((name) => {
+    const item = source[name];
+    const value = item && typeof item === "object" ? item.value : item;
+    const available = item && typeof item === "object" && item.available !== undefined
+      ? item.available && value !== null && value !== undefined
+      : value !== null && value !== undefined && Number.isFinite(Number(value));
+    telemetry[name] = available ? Number(value) : null;
+    telemetry.sensor_status = telemetry.sensor_status || {};
+    telemetry.sensor_status[name] = Boolean(available && Number.isFinite(telemetry[name]));
+  });
+  return telemetry;
+}
+
+function showUnavailableReadings() {
+  ["valTemperature", "valOilLevel", "valVoltage", "valCurrent", "monValTemp", "monValOil", "monValVolt", "monValCurr"].forEach((id) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = "--";
+  });
+}
+
+function updateSensorStatus(status) {
+  const labels = {
+    temperature: "sensorStateTemperature",
+    oil_level: "sensorStateOilLevel",
+    voltage: "sensorStateVoltage",
+    current: "sensorStateCurrent"
+  };
+  Object.entries(labels).forEach(([name, id]) => {
+    const element = document.getElementById(id);
+    const active = dashboardMode === "DEMO" || Boolean(status.connected && status.sensors && status.sensors[name]);
+    element.textContent = active ? "Active" : "Offline";
+    element.className = active ? "sensor-active" : "sensor-offline";
+  });
+  const connection = document.getElementById("esp32ConnectionState");
+  const summary = document.getElementById("sensorStatusSummary");
+  const connected = dashboardMode === "DEMO" || status.connected;
+  connection.textContent = dashboardMode === "DEMO" ? "Demo" : (connected ? "ESP32 connected" : "Offline");
+  connection.className = `connection-state ${connected ? "active" : "offline"}`;
+  summary.textContent = dashboardMode === "DEMO" ? "Simulator telemetry" : (status.last_seen ? `Last seen ${status.last_seen}` : "Waiting for local ESP32");
+  document.querySelector(".online-indicator").lastChild.textContent = dashboardMode === "DEMO" ? " Demo" : (connected ? " Real stream" : " Offline");
+}
+
+function formatReading(value, precision) {
+  return Number.isFinite(value) ? value.toFixed(precision) : "--";
+}
+
 // --------------------------------------------------------------------------
 // 6. Processing Telemetry Across Views
 // --------------------------------------------------------------------------
 function processIncomingTelemetry(data) {
+  if (dashboardMode === "DEMO") lastDemoTelemetry = data;
   const temp = parseFloat(data.temperature);
   const oil = parseFloat(data.oil_level);
   const volt = parseFloat(data.voltage);
   const curr = parseFloat(data.current);
-  const status = data.health_status || "NORMAL";
-  const confidence = parseFloat(data.confidence || 99.0);
+  const status = data.health_status || "NO HEALTH DATA";
+  const confidence = parseFloat(data.confidence);
   const timeLabel = data.timestamp ? data.timestamp.split(" ")[1] || data.timestamp : "--:--:--";
 
   // Store in buffer
@@ -332,18 +472,18 @@ function processIncomingTelemetry(data) {
   if (telemetryHistoryBuffer.length > 100) telemetryHistoryBuffer.shift();
 
   // 1. Dashboard View Numerical Cards
-  document.getElementById("valTemperature").textContent = temp.toFixed(1);
-  document.getElementById("valOilLevel").textContent = oil.toFixed(1);
-  document.getElementById("valVoltage").textContent = volt.toFixed(1);
-  document.getElementById("valCurrent").textContent = curr.toFixed(2);
+  document.getElementById("valTemperature").textContent = formatReading(temp, 1);
+  document.getElementById("valOilLevel").textContent = formatReading(oil, 1);
+  document.getElementById("valVoltage").textContent = formatReading(volt, 1);
+  document.getElementById("valCurrent").textContent = formatReading(curr, 2);
 
   // 2. Monitoring View Numerical Readouts
   const monTemp = document.getElementById("monValTemp");
   if (monTemp) {
-    monTemp.textContent = temp.toFixed(1);
-    document.getElementById("monValOil").textContent = oil.toFixed(1);
-    document.getElementById("monValVolt").textContent = volt.toFixed(1);
-    document.getElementById("monValCurr").textContent = curr.toFixed(2);
+    monTemp.textContent = formatReading(temp, 1);
+    document.getElementById("monValOil").textContent = formatReading(oil, 1);
+    document.getElementById("monValVolt").textContent = formatReading(volt, 1);
+    document.getElementById("monValCurr").textContent = formatReading(curr, 2);
   }
 
   // 3. Update Status Tags
@@ -361,23 +501,26 @@ function processIncomingTelemetry(data) {
   } else if (status === "WARNING") {
     healthPill.classList.add("status-warning");
     healthText.textContent = "WARNING";
-  } else {
+  } else if (status === "CRITICAL") {
     healthPill.classList.add("status-critical");
     healthText.textContent = "CRITICAL";
+  } else {
+    healthPill.classList.add("status-warning");
+    healthText.textContent = "NO HEALTH DATA";
   }
-  healthConf.textContent = `(${confidence.toFixed(1)}% RF AI)`;
+  healthConf.textContent = Number.isFinite(confidence) ? `(${confidence.toFixed(1)}% confidence)` : "(ESP32 payload)";
 
   // 5. Update Meta Timestamp
   document.getElementById("lastUpdatedLabel").textContent = `Last updated: Just now (${timeLabel})`;
 
   // 6. Push to Sparklines
-  pushSparkline(sparklines.temp, temp);
-  pushSparkline(sparklines.oil, oil);
-  pushSparkline(sparklines.volt, volt);
-  pushSparkline(sparklines.curr, curr);
+  if (Number.isFinite(temp)) pushSparkline(sparklines.temp, temp);
+  if (Number.isFinite(oil)) pushSparkline(sparklines.oil, oil);
+  if (Number.isFinite(volt)) pushSparkline(sparklines.volt, volt);
+  if (Number.isFinite(curr)) pushSparkline(sparklines.curr, curr);
 
   // 7. Push to Main Trend Chart
-  pushMainChart(timeLabel, temp, volt, curr, oil);
+  if ([temp, volt, curr, oil].every(Number.isFinite)) pushMainChart(timeLabel, temp, volt, curr, oil);
 
   // 8. Update Checklist on Dashboard
   updateStatusChecklist(status, temp, oil, volt, curr);
@@ -393,7 +536,10 @@ function processIncomingTelemetry(data) {
 
 function updateParameterTags(temp, oil, volt, curr) {
   const tagTemp = document.getElementById("tagTemp");
-  if (temp >= 85) {
+  if (!Number.isFinite(temp)) {
+    tagTemp.className = "param-status-tag tag-offline";
+    tagTemp.textContent = "-- Offline";
+  } else if (temp >= 85) {
     tagTemp.className = "param-status-tag tag-crit";
     tagTemp.textContent = "● Critical";
   } else if (temp >= 65) {
@@ -405,7 +551,10 @@ function updateParameterTags(temp, oil, volt, curr) {
   }
 
   const tagOil = document.getElementById("tagOil");
-  if (oil < 45) {
+  if (!Number.isFinite(oil)) {
+    tagOil.className = "param-status-tag tag-offline";
+    tagOil.textContent = "-- Offline";
+  } else if (oil < 45) {
     tagOil.className = "param-status-tag tag-crit";
     tagOil.textContent = "● Low";
   } else if (oil < 70) {
@@ -417,7 +566,10 @@ function updateParameterTags(temp, oil, volt, curr) {
   }
 
   const tagVolt = document.getElementById("tagVolt");
-  if (volt < 190 || volt > 255) {
+  if (!Number.isFinite(volt)) {
+    tagVolt.className = "param-status-tag tag-offline";
+    tagVolt.textContent = "-- Offline";
+  } else if (volt < 190 || volt > 255) {
     tagVolt.className = "param-status-tag tag-crit";
     tagVolt.textContent = "● Fault";
   } else if (volt < 215 || volt > 240) {
@@ -429,7 +581,10 @@ function updateParameterTags(temp, oil, volt, curr) {
   }
 
   const tagCurr = document.getElementById("tagCurr");
-  if (curr > 6.5) {
+  if (!Number.isFinite(curr)) {
+    tagCurr.className = "param-status-tag tag-offline";
+    tagCurr.textContent = "-- Offline";
+  } else if (curr > 6.5) {
     tagCurr.className = "param-status-tag tag-crit";
     tagCurr.textContent = "● Overload";
   } else if (curr > 4.5) {
@@ -454,16 +609,26 @@ function updateStatusChecklist(overallStatus, temp, oil, volt, curr) {
     iconOverall.textContent = "!";
     stateOverall.className = "item-state text-warn";
     stateOverall.textContent = "Warning";
-  } else {
+  } else if (overallStatus === "CRITICAL") {
     iconOverall.className = "check-icon-circle icon-crit";
     iconOverall.textContent = "⚠";
     stateOverall.className = "item-state text-crit";
     stateOverall.textContent = "Critical";
+  } else {
+    iconOverall.className = "check-icon-circle icon-warn";
+    iconOverall.textContent = "--";
+    stateOverall.className = "item-state text-muted";
+    stateOverall.textContent = "No data";
   }
 
   const iconTemp = document.getElementById("iconTempCheck");
   const stateTemp = document.getElementById("stateTempText");
-  if (temp < 65) {
+  if (!Number.isFinite(temp)) {
+    iconTemp.className = "check-icon-circle icon-warn";
+    iconTemp.textContent = "--";
+    stateTemp.className = "item-state text-muted";
+    stateTemp.textContent = "Offline";
+  } else if (temp < 65) {
     iconTemp.className = "check-icon-circle icon-ok";
     iconTemp.textContent = "✓";
     stateTemp.className = "item-state text-good";
@@ -482,7 +647,12 @@ function updateStatusChecklist(overallStatus, temp, oil, volt, curr) {
 
   const iconOil = document.getElementById("iconOilCheck");
   const stateOil = document.getElementById("stateOilText");
-  if (oil >= 70) {
+  if (!Number.isFinite(oil)) {
+    iconOil.className = "check-icon-circle icon-warn";
+    iconOil.textContent = "--";
+    stateOil.className = "item-state text-muted";
+    stateOil.textContent = "Offline";
+  } else if (oil >= 70) {
     iconOil.className = "check-icon-circle icon-ok";
     iconOil.textContent = "✓";
     stateOil.className = "item-state text-good";
@@ -501,7 +671,12 @@ function updateStatusChecklist(overallStatus, temp, oil, volt, curr) {
 
   const iconVolt = document.getElementById("iconVoltCheck");
   const stateVolt = document.getElementById("stateVoltText");
-  if (volt >= 215 && volt <= 240) {
+  if (!Number.isFinite(volt)) {
+    iconVolt.className = "check-icon-circle icon-warn";
+    iconVolt.textContent = "--";
+    stateVolt.className = "item-state text-muted";
+    stateVolt.textContent = "Offline";
+  } else if (volt >= 215 && volt <= 240) {
     iconVolt.className = "check-icon-circle icon-ok";
     iconVolt.textContent = "✓";
     stateVolt.className = "item-state text-good";
@@ -515,7 +690,12 @@ function updateStatusChecklist(overallStatus, temp, oil, volt, curr) {
 
   const iconCurr = document.getElementById("iconCurrCheck");
   const stateCurr = document.getElementById("stateCurrText");
-  if (curr <= 4.5) {
+  if (!Number.isFinite(curr)) {
+    iconCurr.className = "check-icon-circle icon-warn";
+    iconCurr.textContent = "--";
+    stateCurr.className = "item-state text-muted";
+    stateCurr.textContent = "Offline";
+  } else if (curr <= 4.5) {
     iconCurr.className = "check-icon-circle icon-ok";
     iconCurr.textContent = "✓";
     stateCurr.className = "item-state text-good";
@@ -537,7 +717,7 @@ function appendTerminalLine(time, temp, oil, volt, curr, status) {
   const term = document.getElementById("telemetryTerminalStream");
   if (!term) return;
   const line = document.createElement("div");
-  line.textContent = `[${time}] RX: T=${temp.toFixed(1)}°C | Oil=${oil.toFixed(1)}% | V=${volt.toFixed(1)}V | I=${curr.toFixed(2)}A => AI Classification: [${status}]`;
+  line.textContent = `[${time}] RX: T=${temp.toFixed(1)}°C | Oil=${oil.toFixed(1)}% | V=${volt.toFixed(1)}V | I=${curr.toFixed(2)}A => Status: [${status}]`;
   term.appendChild(line);
   if (term.children.length > 25) term.removeChild(term.firstChild);
   term.scrollTop = term.scrollHeight;
@@ -658,7 +838,7 @@ function initAnalyticsCharts() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: "bottom", labels: { boxWidth: 12, font: { family: "Inter", size: 11 } } }
+          legend: { position: "bottom", labels: { boxWidth: 12, font: { family: "SFProRounded", size: 11 } } }
         }
       }
     });
@@ -697,7 +877,7 @@ function initAnalyticsCharts() {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
-          legend: { position: "top", labels: { boxWidth: 12, font: { family: "Inter", size: 11 } } }
+          legend: { position: "top", labels: { boxWidth: 12, font: { family: "SFProRounded", size: 11 } } }
         },
         scales: {
           x: { grid: { color: "#f1f5f9" }, ticks: { font: { size: 9 } } },
@@ -741,7 +921,7 @@ async function loadAnalyticsData() {
       if (barBox && model.feature_importances) {
         barBox.innerHTML = "";
         const labels = {
-          temperature: "1. Oil Temperature (°C)",
+          temperature: "1. TEMPERATURE (°C)",
           oil_level: "2. Oil Reservoir Level (%)",
           voltage: "3. AC Supply Voltage (V)",
           current: "4. Secondary Load Current (A)",

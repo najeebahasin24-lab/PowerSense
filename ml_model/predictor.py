@@ -66,7 +66,7 @@ class TransformerHealthPredictor:
         alerts = []
 
         if temperature >= 85.0:
-            risk_factors.append(f"Core/Oil temperature ({temperature:.1f}°C) exceeds critical safety limit (85°C).")
+            risk_factors.append(f"Core/TEMPERATURE ({temperature:.1f}°C) exceeds critical safety limit (85°C).")
             alerts.append({"severity": "CRITICAL", "param": "Temperature", "msg": f"Extreme thermal runaway hazard: {temperature:.1f}°C"})
             recommendations.append("Immediate emergency shutdown / load disconnection to prevent winding fire.")
         elif temperature >= 65.0:

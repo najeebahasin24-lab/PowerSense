@@ -1,48 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PowerSense - AI-Based Smart Transformer Health Monitoring System</title>
-  <meta name="description" content="PowerSense: Industrial AI-Based Smart Transformer Health & Telemetry Monitoring Portal">
-  
-  <!-- Inter Font for Professional Utility SCADA Dashboard -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-  
+  <title>PowerSense - Transformer Monitoring</title>
+  <meta name="description"
+    content="PowerSense: industrial transformer health and telemetry monitoring">
+  <link rel="icon" type="image/png" href="/static/assets/logo.png">
+
+  <!-- Use the local SF Pro Rounded font for a consistent dashboard. -->
+
   <!-- Chart.js for real-time sparklines and analytics charts -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <!-- Custom Stylesheet -->
   <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body>
   <div class="layout-wrapper">
-    
+
     <!-- ====================================================================
          LEFT DARK SIDEBAR (POWERSENSE)
          ==================================================================== -->
     <aside class="sidebar" id="sidebar">
-      
+
       <!-- Brand Header -->
       <div class="sidebar-brand">
         <div class="brand-icon">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
-            <polyline points="13 11 11 15 14 15 12 19"></polyline>
-          </svg>
+          <img src="/static/assets/logo.png" alt="PowerSense logo">
         </div>
         <div class="brand-text">
-          <span class="brand-name">PowerSense</span>
-          <span class="brand-tag">Grid Intelligence</span>
+          <span class="brand-name"><strong>PowerSense</strong></span>
         </div>
       </div>
 
       <!-- Navigation Menu -->
       <nav class="sidebar-nav">
         <button class="nav-item active" data-view="viewDashboard" onclick="switchView('viewDashboard')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="3" y="3" width="7" height="9"></rect>
             <rect x="14" y="3" width="7" height="5"></rect>
             <rect x="14" y="12" width="7" height="9"></rect>
@@ -52,7 +50,8 @@
         </button>
 
         <button class="nav-item" data-view="viewAssets" onclick="switchView('viewAssets')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
             <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
           </svg>
@@ -60,14 +59,16 @@
         </button>
 
         <button class="nav-item" data-view="viewMonitoring" onclick="switchView('viewMonitoring')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
           </svg>
           <span>Monitoring</span>
         </button>
 
         <button class="nav-item" data-view="viewAnalytics" onclick="switchView('viewAnalytics')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="20" x2="18" y2="10"></line>
             <line x1="12" y1="20" x2="12" y2="4"></line>
             <line x1="6" y1="20" x2="6" y2="14"></line>
@@ -76,7 +77,8 @@
         </button>
 
         <button class="nav-item" data-view="viewAlerts" onclick="switchView('viewAlerts')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
           </svg>
@@ -85,7 +87,8 @@
         </button>
 
         <button class="nav-item" data-view="viewReports" onclick="switchView('viewReports')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
             <polyline points="14 2 14 8 20 8"></polyline>
             <line x1="16" y1="13" x2="8" y2="13"></line>
@@ -96,16 +99,22 @@
         </button>
 
         <button class="nav-item" data-view="viewMaintenance" onclick="switchView('viewMaintenance')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path
+              d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z">
+            </path>
           </svg>
           <span>Maintenance</span>
         </button>
 
         <button class="nav-item" data-view="viewSettings" onclick="switchView('viewSettings')">
-          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            <path
+              d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z">
+            </path>
           </svg>
           <span>Settings</span>
         </button>
@@ -133,7 +142,7 @@
          MAIN CONTENT AREA
          ==================================================================== -->
     <main class="main-content">
-      
+
       <!-- Top Bar: Breadcrumbs, Title, Review Demo Toolbar -->
       <header class="content-header">
         <div class="header-titles-wrap">
@@ -144,15 +153,15 @@
             <span class="sep">›</span>
             <span class="current">TRANSFORMER 001</span>
           </nav>
-          
+
           <div class="transformer-title-row">
             <h1 class="transformer-heading" id="viewHeaderHeading">TRANSFORMER 001</h1>
-            
+
             <!-- Overall Health Status Pill -->
             <div class="health-status-badge status-normal" id="overallHealthPill">
               <span class="health-dot" id="overallHealthDot"></span>
               <span class="health-text" id="overallHealthText">NORMAL</span>
-              <span class="health-confidence" id="overallHealthConf">(99.4% RF AI)</span>
+              <span class="health-confidence" id="overallHealthConf">(99.4% confidence)</span>
             </div>
           </div>
 
@@ -165,25 +174,38 @@
           </div>
         </div>
 
-        <!-- Right Header Actions (Demo Scenarios Controller for Review, Date pill, Notifications) -->
+        <!-- Right Header Actions -->
         <div class="header-actions-wrap">
-          
+
           <div class="demo-controller-group">
-            <span class="demo-label">Review Demo Mode:</span>
+            <span class="demo-label">View</span>
+            <div class="mode-switch" role="group" aria-label="Dashboard view mode">
+              <button class="mode-btn active" id="modeDemo" onclick="setDashboardMode('DEMO')">Demo</button>
+              <button class="mode-btn" id="modeReal" onclick="setDashboardMode('REAL')">Real</button>
+            </div>
+            <label class="real-endpoint-control" id="realEndpointControl">
+              ESP32 URL
+              <input id="esp32Endpoint" type="url" value="http://192.168.4.1/api/sensors" spellcheck="false">
+            </label>
             <div class="scenario-buttons-strip">
-              <button class="scen-btn btn-scen-normal active" id="btnScenNormal" onclick="selectDemoScenario('NORMAL')" title="Inject Normal Baseline Readings">
+              <button class="scen-btn btn-scen-normal active" id="btnScenNormal" onclick="selectDemoScenario('NORMAL')"
+                title="Inject Normal Baseline Readings">
                 ● Normal
               </button>
-              <button class="scen-btn btn-scen-warn" id="btnScenWarning" onclick="selectDemoScenario('WARNING_THERMAL')" title="Inject Warning Thermal Stress">
+              <button class="scen-btn btn-scen-warn" id="btnScenWarning" onclick="selectDemoScenario('WARNING_THERMAL')"
+                title="Inject Warning Thermal Stress">
                 ● Warning
               </button>
-              <button class="scen-btn btn-scen-crit" id="btnScenCritical" onclick="selectDemoScenario('CRITICAL_LEAK')" title="Inject Critical Low Oil & Heat">
+              <button class="scen-btn btn-scen-crit" id="btnScenCritical" onclick="selectDemoScenario('CRITICAL_LEAK')"
+                title="Inject Critical Low Oil & Heat">
                 ● Critical
               </button>
-              <button class="scen-btn btn-scen-custom" id="btnCustomSliders" onclick="openManualSliderModal()" title="Custom Sliders">
-                🎛 Sliders
+              <button class="scen-btn btn-scen-custom" id="btnCustomSliders" onclick="openManualSliderModal()"
+                title="Custom Sliders">
+                Sliders
               </button>
-              <button class="stream-pause-btn" id="btnToggleSimStream" onclick="toggleSimStream()" title="Pause / Resume Live Simulation Feed">
+              <button class="stream-pause-btn" id="btnToggleSimStream" onclick="toggleSimStream()"
+                title="Pause / Resume Live Simulation Feed">
                 ⏸ Pause
               </button>
             </div>
@@ -191,14 +213,16 @@
 
           <div class="quick-icons">
             <button class="btn-icon" onclick="switchView('viewAlerts')" title="Alert Notifications">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
                 <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
                 <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
               </svg>
               <span class="icon-bubble" id="notifBadge">0</span>
             </button>
             <div class="date-range-pill" id="liveDatePill">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                 <line x1="16" y1="2" x2="16" y2="6"></line>
                 <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -215,14 +239,15 @@
            VIEW 1: DASHBOARD (MAIN OVERVIEW)
            ==================================================================== -->
       <div class="app-view active" id="viewDashboard">
-        
+
         <!-- Hero: Transformer Visual + 4 Parameter Cards -->
         <section class="overview-grid">
-          
+
           <!-- Transformer Visual Card -->
           <div class="card transformer-visual-card">
             <div class="transformer-image-wrap">
-              <img src="/static/assets/transformer.png" alt="Industrial Distribution Transformer" class="transformer-img" id="transformerAssetImg">
+              <img src="/static/assets/transformer-front.png" alt="Industrial Distribution Transformer"
+                class="transformer-img" id="transformerAssetImg">
               <div class="transformer-nameplate">
                 <span class="nameplate-id">TRANSFORMER 001</span>
                 <span class="nameplate-sub">1.0 kVA · 230V / 12V Step-Down</span>
@@ -232,20 +257,21 @@
 
           <!-- The FOUR Parameter Cards (2x2 Grid) -->
           <div class="parameters-grid">
-            
-            <!-- PARAMETER 1: OIL TEMPERATURE (°C) -->
+
+            <!-- PARAMETER 1: TEMPERATURE (°C) -->
             <div class="card param-card" id="cardTemp">
               <div class="param-header">
                 <div class="param-title-wrap">
                   <div class="param-icon-badge badge-temp">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                      stroke-linecap="round" stroke-linejoin="round">
                       <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>
                     </svg>
                   </div>
-                  <span class="param-name">OIL TEMPERATURE</span>
+                  <span class="param-name">TEMPERATURE</span>
                 </div>
               </div>
-              
+
               <div class="param-value-row">
                 <div class="param-number">
                   <span class="val-large" id="valTemperature">46.2</span>
@@ -264,18 +290,19 @@
             </div>
 
             <!-- PARAMETER 2: OIL LEVEL (%) -->
-            <div class="card param-card" id="cardOil">
+            <div class="card param-card oil-level-standby" id="cardOil">
               <div class="param-header">
                 <div class="param-title-wrap">
                   <div class="param-icon-badge badge-oil">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                      stroke-linecap="round" stroke-linejoin="round">
                       <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
                     </svg>
                   </div>
                   <span class="param-name">OIL LEVEL</span>
                 </div>
               </div>
-              
+
               <div class="param-value-row">
                 <div class="param-number">
                   <span class="val-large" id="valOilLevel">89.5</span>
@@ -298,14 +325,15 @@
               <div class="param-header">
                 <div class="param-title-wrap">
                   <div class="param-icon-badge badge-volt">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                      stroke-linecap="round" stroke-linejoin="round">
                       <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
                     </svg>
                   </div>
                   <span class="param-name">VOLTAGE (AC RMS)</span>
                 </div>
               </div>
-              
+
               <div class="param-value-row">
                 <div class="param-number">
                   <span class="val-large" id="valVoltage">230.2</span>
@@ -324,18 +352,19 @@
             </div>
 
             <!-- PARAMETER 4: LOAD CURRENT (A) -->
-            <div class="card param-card" id="cardCurr">
+            <div class="card param-card load-current-expanded" id="cardCurr">
               <div class="param-header">
                 <div class="param-title-wrap">
                   <div class="param-icon-badge badge-curr">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                      stroke-linecap="round" stroke-linejoin="round">
                       <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
                     </svg>
                   </div>
                   <span class="param-name">LOAD CURRENT</span>
                 </div>
               </div>
-              
+
               <div class="param-value-row">
                 <div class="param-number">
                   <span class="val-large" id="valCurrent">2.78</span>
@@ -357,23 +386,39 @@
 
         </section>
 
+        <section class="card sensor-status-strip">
+          <div class="sensor-status-heading">
+            <div>
+              <h2 class="section-title">Sensor link</h2>
+              <span class="chart-subtitle" id="sensorStatusSummary">Simulator telemetry</span>
+            </div>
+            <span class="connection-state active" id="esp32ConnectionState">Demo</span>
+          </div>
+          <div class="sensor-status-list">
+            <div class="sensor-status-row"><span>TEMPERATURE</span><strong id="sensorStateTemperature">Active</strong></div>
+            <div class="sensor-status-row"><span>Oil level</span><strong id="sensorStateOilLevel">Active</strong></div>
+            <div class="sensor-status-row"><span>Voltage</span><strong id="sensorStateVoltage">Active</strong></div>
+            <div class="sensor-status-row"><span>Current</span><strong id="sensorStateCurrent">Active</strong></div>
+          </div>
+        </section>
+
         <!-- Lower Section: Large Parameter Trend Chart + Status & Alerts Checklist -->
         <section class="analytics-row">
-          
+
           <!-- Large Parameter Trend Chart -->
           <div class="card chart-card">
             <div class="chart-header">
               <div class="chart-title-area">
                 <h2 class="chart-title">Parameter Trend</h2>
-                <span class="chart-subtitle">Continuous multi-sensor telemetry history</span>
+                <span class="chart-subtitle">Recent sensor readings</span>
               </div>
 
               <div class="chart-controls">
                 <div class="chart-custom-legends">
-                  <span class="leg-item leg-temp"><span class="leg-line"></span> Oil Temperature (°C)</span>
+                  <span class="leg-item leg-temp"><span class="leg-line"></span> TEMPERATURE (°C)</span>
                   <span class="leg-item leg-volt"><span class="leg-line"></span> Voltage (V)</span>
                   <span class="leg-item leg-curr"><span class="leg-line"></span> Load Current (A)</span>
-                  <span class="leg-item leg-oil"><span class="leg-line"></span> Oil Level (%)</span>
+                  <span class="leg-item leg-oil oil-level-standby"><span class="leg-line"></span> Oil Level (%)</span>
                 </div>
 
                 <div class="chart-filter-select">
@@ -409,7 +454,7 @@
               <div class="status-item" id="itemTemp">
                 <div class="item-left">
                   <span class="check-icon-circle icon-ok" id="iconTempCheck">✓</span>
-                  <span class="item-name">Oil Temperature System</span>
+                  <span class="item-name">TEMPERATURE System</span>
                 </div>
                 <div class="item-right">
                   <span class="item-state text-good" id="stateTempText">Good</span>
@@ -470,7 +515,7 @@
            VIEW 2: ASSETS (TRANSFORMER FLEET & INVENTORY)
            ==================================================================== -->
       <div class="app-view" id="viewAssets">
-        
+
         <!-- Fleet KPI Summary -->
         <div class="stats-row">
           <div class="card stat-card">
@@ -501,7 +546,7 @@
             <h3 class="section-title">Distribution Transformers Fleet Directory</h3>
             <span class="badge-pill">Site: Substation Feeder 01</span>
           </div>
-          
+
           <div class="fleet-table-wrap">
             <table class="data-table">
               <thead>
@@ -572,15 +617,15 @@
            VIEW 3: MONITORING (IN-DEPTH SENSOR TELEMETRY & CALIBRATION)
            ==================================================================== -->
       <div class="app-view" id="viewMonitoring">
-        
+
         <div class="monitoring-cards-grid">
-          
+
           <!-- Detailed Sensor 1: Temperature -->
           <div class="card sensor-detail-card">
             <div class="detail-header">
-              <div class="param-icon-badge badge-temp">🌡️</div>
+              <div class="param-icon-badge badge-temp">T</div>
               <div>
-                <h3 class="sensor-title">Oil Temperature Sensor</h3>
+                <h3 class="sensor-title">TEMPERATURE Sensor</h3>
                 <span class="sensor-model">Model: LM35 / DS18B20 · Pin: GPIO 34 (ADC1_CH6)</span>
               </div>
             </div>
@@ -591,7 +636,8 @@
             <div class="detail-meta-list">
               <div class="meta-line"><span>Safe Margin:</span> <strong>25.0 – 65.0 °C</strong></div>
               <div class="meta-line"><span>Warning Threshold:</span> <strong>&gt; 65.0 °C</strong></div>
-              <div class="meta-line"><span>Critical Trip Limit:</span> <strong class="text-crit">&ge; 85.0 °C</strong></div>
+              <div class="meta-line"><span>Critical Trip Limit:</span> <strong class="text-crit">&ge; 85.0 °C</strong>
+              </div>
               <div class="meta-line"><span>Calibration Offset:</span> <strong>10 mV / °C (Linear)</strong></div>
             </div>
           </div>
@@ -599,7 +645,7 @@
           <!-- Detailed Sensor 2: Oil Level -->
           <div class="card sensor-detail-card">
             <div class="detail-header">
-              <div class="param-icon-badge badge-oil">🛢️</div>
+              <div class="param-icon-badge badge-oil">O</div>
               <div>
                 <h3 class="sensor-title">Insulating Oil Level Sensor</h3>
                 <span class="sensor-model">Model: Ultrasonic HC-SR04 / Float · Pin: GPIO 5 / 18</span>
@@ -612,7 +658,8 @@
             <div class="detail-meta-list">
               <div class="meta-line"><span>Nominal Level:</span> <strong>70.0 – 100.0 %</strong></div>
               <div class="meta-line"><span>Low Warning Limit:</span> <strong>45.0 – 70.0 %</strong></div>
-              <div class="meta-line"><span>Critical Low Level:</span> <strong class="text-crit">&lt; 45.0 % (Dry Winding Risk)</strong></div>
+              <div class="meta-line"><span>Critical Low Level:</span> <strong class="text-crit">&lt; 45.0 % (Dry Winding
+                  Risk)</strong></div>
               <div class="meta-line"><span>Tank Depth Reference:</span> <strong>20.0 cm Reservoir</strong></div>
             </div>
           </div>
@@ -620,7 +667,7 @@
           <!-- Detailed Sensor 3: AC Voltage -->
           <div class="card sensor-detail-card">
             <div class="detail-header">
-              <div class="param-icon-badge badge-volt">⚡</div>
+              <div class="param-icon-badge badge-volt">V</div>
               <div>
                 <h3 class="sensor-title">AC Supply Voltage Sensor</h3>
                 <span class="sensor-model">Model: ZMPT101B Potential Sensor · Pin: GPIO 32 (ADC1_CH4)</span>
@@ -633,15 +680,17 @@
             <div class="detail-meta-list">
               <div class="meta-line"><span>Grid Nominal:</span> <strong>230.0 V (±6% Tolerance)</strong></div>
               <div class="meta-line"><span>Allowed Operating Band:</span> <strong>215.0 – 240.0 V</strong></div>
-              <div class="meta-line"><span>Undervoltage Sag:</span> <strong class="text-crit">&lt; 190.0 V</strong></div>
-              <div class="meta-line"><span>Overvoltage Surge:</span> <strong class="text-crit">&gt; 255.0 V</strong></div>
+              <div class="meta-line"><span>Undervoltage Sag:</span> <strong class="text-crit">&lt; 190.0 V</strong>
+              </div>
+              <div class="meta-line"><span>Overvoltage Surge:</span> <strong class="text-crit">&gt; 255.0 V</strong>
+              </div>
             </div>
           </div>
 
           <!-- Detailed Sensor 4: Load Current -->
           <div class="card sensor-detail-card">
             <div class="detail-header">
-              <div class="param-icon-badge badge-curr">🔌</div>
+              <div class="param-icon-badge badge-curr">I</div>
               <div>
                 <h3 class="sensor-title">Secondary Load Current Sensor</h3>
                 <span class="sensor-model">Model: ACS712 Hall-Effect Sensor · Pin: GPIO 35 (ADC1_CH7)</span>
@@ -654,7 +703,8 @@
             <div class="detail-meta-list">
               <div class="meta-line"><span>Rated Continuous Load:</span> <strong>0.5 – 4.5 A</strong></div>
               <div class="meta-line"><span>Overcurrent Warning:</span> <strong>4.5 – 6.5 A</strong></div>
-              <div class="meta-line"><span>Short Circuit Trip Limit:</span> <strong class="text-crit">&gt; 6.5 A (Immediate Breaker Trip)</strong></div>
+              <div class="meta-line"><span>Short Circuit Trip Limit:</span> <strong class="text-crit">&gt; 6.5 A
+                  (Immediate Breaker Trip)</strong></div>
               <div class="meta-line"><span>Sensor Sensitivity:</span> <strong>185 mV / A (5A Module)</strong></div>
             </div>
           </div>
@@ -678,10 +728,10 @@
            VIEW 4: ANALYTICS (AI CONDITION & TREND ANALYSIS)
            ==================================================================== -->
       <div class="app-view" id="viewAnalytics">
-        
+
         <div class="stats-row">
           <div class="card stat-card">
-            <span class="stat-label">AI Model Accuracy</span>
+            <span class="stat-label">Model accuracy</span>
             <span class="stat-value text-good" id="analyticsAccuracy">99.20%</span>
             <span class="stat-meta">5-Fold CV: 99.25%</span>
           </div>
@@ -704,7 +754,7 @@
 
         <!-- Charts Grid for Analytics -->
         <div class="analytics-charts-grid">
-          
+
           <!-- Chart A: Classification Distribution Doughnut -->
           <div class="card chart-card">
             <div class="chart-header">
@@ -733,7 +783,7 @@
 
         </div>
 
-        <!-- AI Explainability & IEEE Standard Reference -->
+        <!-- Condition summary & IEEE Standard Reference -->
         <div class="card ai-explain-card">
           <div class="card-head-bar">
             <h3 class="section-title">Random Forest Classifier Architecture &amp; Feature Importances</h3>
@@ -750,15 +800,16 @@
            VIEW 5: ALERTS (SCADA ALARM CONSOLE)
            ==================================================================== -->
       <div class="app-view" id="viewAlerts">
-        
+
         <div class="alerts-console-card card">
           <div class="alerts-toolbar">
             <div class="filter-pills">
               <button class="filter-pill active" onclick="filterAlertsTable('ALL')">All Alarms</button>
-              <button class="filter-pill pill-crit" onclick="filterAlertsTable('CRITICAL')">Critical (High Priority)</button>
+              <button class="filter-pill pill-crit" onclick="filterAlertsTable('CRITICAL')">Critical (High
+                Priority)</button>
               <button class="filter-pill pill-warn" onclick="filterAlertsTable('WARNING')">Warnings</button>
             </div>
-            
+
             <div class="alerts-actions">
               <button class="btn-action" onclick="exportAlertsCSV()">Export Alarm Log</button>
               <button class="btn-action-primary" onclick="clearAllAlerts()">Acknowledge All Alarms</button>
@@ -790,7 +841,7 @@
            VIEW 6: REPORTS (TELEMETRY LOGS & AUDIT EXPORTS)
            ==================================================================== -->
       <div class="app-view" id="viewReports">
-        
+
         <!-- Report Generator Controls -->
         <div class="card report-generator-card">
           <div class="card-head-bar">
@@ -846,7 +897,7 @@
                   <th>Supply Voltage (V)</th>
                   <th>Load Current (A)</th>
                   <th>Health Status</th>
-                  <th>AI Confidence</th>
+                  <th>Model Confidence</th>
                 </tr>
               </thead>
               <tbody id="historicalReportsTableBody">
@@ -862,7 +913,7 @@
            VIEW 7: MAINTENANCE (WORK ORDERS & SERVICE LOGS)
            ==================================================================== -->
       <div class="app-view" id="viewMaintenance">
-        
+
         <div class="stats-row">
           <div class="card stat-card">
             <span class="stat-label">Fleet Maintenance Score</span>
@@ -919,18 +970,18 @@
            VIEW 8: SETTINGS (SYSTEM & THRESHOLDS CONFIGURATION)
            ==================================================================== -->
       <div class="app-view" id="viewSettings">
-        
+
         <div class="settings-grid">
-          
+
           <!-- Sensor Threshold Configuration -->
           <div class="card settings-card">
             <div class="card-head-bar">
               <h3 class="section-title">4-Sensor Safety Threshold Bounds (IEEE C57.104)</h3>
             </div>
-            
+
             <form id="settingsForm" onsubmit="saveSystemSettings(event)">
               <div class="settings-field-group">
-                <label>Oil Temperature Thresholds (°C):</label>
+                <label>TEMPERATURE Thresholds (°C):</label>
                 <div class="dual-inputs">
                   <div>
                     <span class="sub-label">Warning Level:</span>
@@ -1016,7 +1067,7 @@
                 <span class="net-key">Active Asset ID:</span>
                 <span class="net-val">TR-001 (Laboratory Mini Transformer)</span>
               </div>
-              
+
               <div class="notification-toggle-box">
                 <div class="toggle-row">
                   <span>Audio Alert Tone on Critical Events</span>
@@ -1048,8 +1099,8 @@
         <button class="modal-close" onclick="closeManualSliderModal()">✕</button>
       </div>
       <div class="modal-body">
-        <p class="modal-sub">Drag any parameter to test real-time AI classification on your 4 sensors:</p>
-        
+        <p class="modal-sub">Adjust a parameter to test the four sensor limits:</p>
+
         <div class="slider-row">
           <div class="slider-label">
             <span>Temperature:</span>
@@ -1102,24 +1153,27 @@
         <div class="modal-body">
           <div class="slider-row">
             <label class="form-label">Activity Type:</label>
-            <input type="text" id="maintActivity" class="form-input" placeholder="e.g. Dielectric Oil Refill &amp; Sampling" required>
+            <input type="text" id="maintActivity" class="form-input"
+              placeholder="e.g. Dielectric Oil Refill &amp; Sampling" required>
           </div>
           <div class="slider-row">
             <label class="form-label">Technician / Inspector Name:</label>
-            <input type="text" id="maintTech" class="form-input" placeholder="e.g. S Najeeba Hasin / Saumya Kumari" required>
+            <input type="text" id="maintTech" class="form-input" placeholder="e.g. S Najeeba Hasin / Saumya Kumari"
+              required>
           </div>
           <div class="slider-row">
             <label class="form-label">Target Subsystem / Parameter:</label>
             <select id="maintParam" class="form-select">
               <option value="Oil Level">Oil Level &amp; Reservoir</option>
-              <option value="Temperature">Winding &amp; Oil Temperature</option>
+              <option value="Temperature">Winding &amp; TEMPERATURE</option>
               <option value="Voltage">Voltage Sensor &amp; Bushings</option>
               <option value="Current">Load Current &amp; Protection Relay</option>
             </select>
           </div>
           <div class="slider-row">
             <label class="form-label">Inspection Findings &amp; Remediation:</label>
-            <textarea id="maintFindings" class="form-input" rows="3" placeholder="Describe actions taken and verified safe status..." required></textarea>
+            <textarea id="maintFindings" class="form-input" rows="3"
+              placeholder="Describe actions taken and verified safe status..." required></textarea>
           </div>
         </div>
         <div class="modal-actions">
@@ -1133,4 +1187,5 @@
   <!-- Application Logic -->
   <script src="/static/app.js"></script>
 </body>
+
 </html>

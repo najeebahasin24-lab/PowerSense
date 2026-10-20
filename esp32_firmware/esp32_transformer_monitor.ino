@@ -18,6 +18,7 @@
 
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WebServer.h>
 #include <ArduinoJson.h> // Recommended ArduinoJson library v6 or v7
 
 // --------------------------------------------------------------------------
@@ -34,6 +35,10 @@ const char* WIFI_PASSWORD = "Password123";
 // --------------------------------------------------------------------------
 const char* SERVER_URL = "http://192.168.1.50:8000/api/telemetry";
 const char* TRANSFORMER_ID = "TR-001";
+const char* AP_SSID = "PowerSense-ESP32";
+const char* AP_PASSWORD = "powersense";
+
+WebServer espServer(80);
 
 // Pin Assignments
 const int PIN_TEMP_LM35     = 34; // ADC1 CH6
@@ -52,6 +57,15 @@ const float OIL_TANK_DEPTH_CM = 20.0;   // Height of the mini transformer oil re
 unsigned long lastSendTime = 0;
 const unsigned long SEND_INTERVAL_MS = 2000; // Send telemetry every 2 seconds
 
+float latestTemperature = NAN;
+float latestOilLevel = NAN;
+float latestVoltage = NAN;
+float latestCurrent = NAN;
+bool temperatureAvailable = false;
+bool oilLevelAvailable = false;
+bool voltageAvailable = false;
+bool currentAvailable = false;
+
 void setup() {
   Serial.begin(115200);
   delay(1000);
@@ -69,14 +83,18 @@ void setup() {
   // Set ADC attenuation to 11dB for full 0 - 3.3V range
   analogSetAttenuation(ADC_11db);
 
-  connectToWiFi();
+  WiFi.mode(WIFI_AP);
+  WiFi.softAP(AP_SSID, AP_PASSWORD);
+  espServer.on("/api/sensors", HTTP_GET, handleSensorApi);
+  espServer.begin();
+  Serial.print("[AP] SSID: ");
+  Serial.println(AP_SSID);
+  Serial.print("[AP] Sensor API: http://");
+  Serial.println(WiFi.softAPIP());
 }
 
 void loop() {
-  // Reconnect Wi-Fi if lost
-  if (WiFi.status() != WL_CONNECTED) {
-    connectToWiFi();
-  }
+  espServer.handleClient();
 
   // Periodic sensor acquisition & cloud transmission
   if (millis() - lastSendTime >= SEND_INTERVAL_MS) {
@@ -88,12 +106,48 @@ void loop() {
     float voltage     = readVoltageRMS();
     float oilLevel    = readOilLevelPercentage();
 
+    latestTemperature = temperature;
+    latestOilLevel = oilLevel;
+    latestVoltage = voltage;
+    latestCurrent = current;
+    temperatureAvailable = isfinite(temperature);
+    oilLevelAvailable = isfinite(oilLevel);
+    voltageAvailable = isfinite(voltage);
+    currentAvailable = isfinite(current);
+
     Serial.printf("\n[SENSORS] Temp: %.2f °C | Oil: %.2f %% | Volt: %.2f V | Curr: %.2f A\n",
                   temperature, oilLevel, voltage, current);
 
-    // 2. Transmit to Backend
-    sendTelemetryToServer(temperature, oilLevel, voltage, current);
+    // The browser reads the local API directly over the ESP32 access point.
   }
+}
+
+void addSensor(JsonObject sensors, const char* name, float value, bool available, const char* unit) {
+  JsonObject sensor = sensors.createNestedObject(name);
+  sensor["available"] = available;
+  sensor["unit"] = unit;
+  if (available) {
+    sensor["value"] = value;
+  } else {
+    sensor["value"] = nullptr;
+  }
+}
+
+void handleSensorApi() {
+  StaticJsonDocument<768> doc;
+  doc["device_id"] = TRANSFORMER_ID;
+  doc["timestamp_ms"] = millis();
+  JsonObject sensors = doc.createNestedObject("sensors");
+  addSensor(sensors, "temperature", latestTemperature, temperatureAvailable, "C");
+  addSensor(sensors, "oil_level", latestOilLevel, oilLevelAvailable, "%");
+  addSensor(sensors, "voltage", latestVoltage, voltageAvailable, "V");
+  addSensor(sensors, "current", latestCurrent, currentAvailable, "A");
+
+  String response;
+  serializeJson(doc, response);
+  espServer.sendHeader("Access-Control-Allow-Origin", "*");
+  espServer.sendHeader("Cache-Control", "no-store");
+  espServer.send(200, "application/json", response);
 }
 
 // --------------------------------------------------------------------------
@@ -214,12 +268,17 @@ void sendTelemetryToServer(float temp, float oil, float volt, float curr) {
   http.addHeader("Content-Type", "application/json");
 
   // Construct JSON Payload
-  StaticJsonDocument<256> doc;
+  StaticJsonDocument<384> doc;
   doc["transformer_id"] = TRANSFORMER_ID;
   doc["temperature"]    = temp;
   doc["oil_level"]      = oil;
   doc["voltage"]        = volt;
   doc["current"]        = curr;
+  JsonObject sensorStatus = doc.createNestedObject("sensor_status");
+  sensorStatus["temperature"] = isfinite(temp);
+  sensorStatus["oil_level"] = isfinite(oil);
+  sensorStatus["voltage"] = isfinite(volt);
+  sensorStatus["current"] = isfinite(curr);
 
   String jsonPayload;
   serializeJson(doc, jsonPayload);
